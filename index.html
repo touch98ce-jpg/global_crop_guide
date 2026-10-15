@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global Crop Guide — climate, crops and a rough income estimate for any place</title>
+<meta name="description" content="Type any place on Earth. See its 10-year climate, the crops its country grows most, and a rough income estimate — from open public data (Open-Meteo, FAOSTAT, OpenStreetMap). Free, non-commercial.">
+<!-- Link previews (LinkedIn, Facebook, X, KakaoTalk). og:url / og:image must be the full public address — update after the GitHub Pages URL is known. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Global Crop Guide">
+<meta property="og:description" content="Type any place on Earth. See its 10-year climate, the crops its country grows most, and a rough income estimate — from open public data.">
+<meta property="og:url" content="https://touch98ce-jpg.github.io/global-crop-guide/">
+<meta property="og:image" content="https://touch98ce-jpg.github.io/global-crop-guide/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--bg:#FAF7F0;--card:#fff;--text:#21281D;--muted:#5B6355;--border:#E3DCCB;--accent:#2F5D3A;--accent2:#C97A3D;--soft:#F3EFE4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+header{background:var(--accent);color:#fff;padding:10px 16px;font-size:13px}
+header b{font-weight:700}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:8px 0 4px;color:var(--accent)}
+h2{font-size:18px;margin:26px 0 8px;color:var(--accent)}
+p.lead{color:var(--muted);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
+label{display:block;font-weight:600;font-size:14px;margin:8px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:#fff}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer}
+button.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.stat{background:var(--soft);border-radius:10px;padding:10px 12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:20px;font-weight:700}
+.stat .u{font-size:12px;color:var(--muted);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.muted{color:var(--muted);font-size:13px}
+.note{background:#FFF4D6;border:1px solid #F2C57C;border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+.err{background:#FDECEA;border:1px solid #F5B5AE;border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+.hidden{display:none}
+.chart{width:100%;height:auto;margin-top:8px}
+.src{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);margin-top:10px;padding-top:6px}
+.assume{color:var(--accent2);font-weight:600}
+footer{color:var(--muted);font-size:12px;margin:30px 0 10px}
+@media (max-width:600px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><b>Beta · personal, non-commercial</b> · Every number comes from the public sources named under each block, or from what you type. Nothing here is a forecast or a promise.</header>
+<main>
+<h1>Global Crop Guide</h1>
+<p class="lead">Type a place. See its climate (10-year averages), the crops its country grows most, and a rough income estimate for a plot you choose.</p>
+
+<!-- 1. Place -->
+<section class="card" id="placeCard">
+  <h2 style="margin-top:0">1. Where is the field?</h2>
+  <div class="row">
+    <div><label for="addr">Address, town or region</label><input id="addr" placeholder="e.g. Da Lat, Lam Dong, Vietnam"></div>
+    <div><button id="goBtn">Look up</button></div>
+  </div>
+  <p class="muted" id="placeHint">Place names are looked up with OpenStreetMap Nominatim (free, 1 request per second). The map link opens Google Maps for the found point — no Google API is used.</p>
+  <div id="placeOut" class="hidden">
+    <div class="grid">
+      <div class="stat"><div class="k">Found</div><div class="v" style="font-size:15px" id="placeName"></div></div>
+      <div class="stat"><div class="k">Coordinates</div><div class="v" style="font-size:15px" id="placeLatLon"></div></div>
+      <div class="stat"><div class="k">Country</div><div class="v" style="font-size:15px" id="placeCountry"></div></div>
+    </div>
+    <p class="muted"><a id="mapLink" target="_blank" rel="noopener">Open this point in Google Maps</a> · <a id="searchLink" target="_blank" rel="noopener">Search the web for agriculture in this area</a></p>
+  </div>
+  <div id="placeErr" class="err hidden"></div>
+</section>
+
+<!-- 2. Climate -->
+<section class="card hidden" id="climateCard">
+  <h2 style="margin-top:0">2. Climate at this point <span class="muted" id="climateYears"></span></h2>
+  <p class="muted" id="climateStatus">Fetching 10 years of daily weather …</p>
+  <div id="climateOut" class="hidden">
+    <div class="grid" id="climateStats"></div>
+    <svg class="chart" id="climateChart" viewBox="0 0 760 300" role="img" aria-label="Monthly temperature and rainfall"></svg>
+    <table id="climateTable"></table>
+    <p class="src">Source: Open-Meteo Historical Weather API (ERA5 reanalysis, ~9–25 km grid, averaged over the years shown). Reanalysis is a model estimate blended with observations — a nearby weather station can differ, especially in mountains. Non-commercial use.</p>
+  </div>
+  <div id="climateErr" class="err hidden"></div>
+</section>
+
+<!-- 3. Crops of the country -->
+<section class="card hidden" id="cropsCard">
+  <h2 style="margin-top:0">3. What this country grows most <span class="muted" id="cropsYear"></span></h2>
+  <p class="muted">Country totals — FAOSTAT has no sub-national data, so this is the national picture, not this district's. Use the web search link above for local information.</p>
+  <div id="cropsOut"></div>
+  <p class="src" id="cropsSrc"></p>
+</section>
+
+<!-- 4. Income estimate -->
+<section class="card hidden" id="incomeCard">
+  <h2 style="margin-top:0">4. Rough income estimate</h2>
+  <p class="muted">Revenue = area × yield × producer price. Yield and price start from the FAOSTAT national averages of the crop you pick; change them to your own figures. <span class="assume">Costs are your assumption</span> — there is no public cost survey for most countries, so the page does not guess one.</p>
+  <div class="grid">
+    <div><label for="cropSel">Crop</label><select id="cropSel"></select></div>
+    <div><label for="areaIn">Area (ha)</label><input id="areaIn" type="number" min="0.01" step="0.01" value="1"></div>
+    <div><label for="yieldIn">Yield (t/ha)</label><input id="yieldIn" type="number" min="0" step="0.1"></div>
+    <div><label for="priceIn">Producer price (USD/t)</label><input id="priceIn" type="number" min="0" step="1"></div>
+    <div><label for="costIn">Total cost (USD, whole area) <span class="assume">— your assumption</span></label><input id="costIn" type="number" min="0" step="1" placeholder="seed, fertilizer, crop protection, labour, machinery…"></div>
+    <div><label for="costPct">…or cost as % of revenue <span class="assume">(assumption)</span></label><input id="costPct" type="number" min="0" max="200" step="1" placeholder="e.g. 60"></div>
+  </div>
+  <div class="grid" style="margin-top:12px">
+    <div class="stat"><div class="k">Expected production</div><div class="v" id="outProd">–</div></div>
+    <div class="stat"><div class="k">Gross revenue <span class="u">(all sales, before costs)</span></div><div class="v" id="outRev">–</div></div>
+    <div class="stat"><div class="k">Costs <span class="u">(your assumption)</span></div><div class="v" id="outCost">–</div></div>
+    <div class="stat" style="background:#EEF3E9"><div class="k">Net income <span class="u">(before your own labour)</span></div><div class="v" id="outNet">–</div></div>
+  </div>
+  <p class="muted" id="incomeNote"></p>
+  <p class="src">Yield and price defaults: FAOSTAT national averages (year shown in block 3). Producer price = what farmers receive at the farm gate, annual average. Prices move by season and quality; costs vary by farm. One planting season is assumed.</p>
+</section>
+
+<footer>Global Crop Guide · personal, non-commercial prototype. Data: OpenStreetMap contributors (ODbL), Open-Meteo (CC BY 4.0), FAO FAOSTAT (CC BY 4.0). No login, no tracking; what you type stays in your browser.</footer>
+</main>
+
+<script src="faostat_top_crops.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 0) => (n == null || isNaN(n) ? "–" : Number(n).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }));
+const usd = (n) => (n == null || isNaN(n) ? "–" : "$" + fmt(n, 0));
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const CLIMATE_YEARS = 10;                     // last N complete calendar years
+let place = null, climate = null, countryCrops = null;
+
+// ---------- 1. place ----------
+$("goBtn").addEventListener("click", lookup);
+$("addr").addEventListener("keydown", (e) => { if (e.key === "Enter") lookup(); });
+
+async function lookup() {
+  const q = $("addr").value.trim();
+  if (!q) return;
+  $("placeErr").classList.add("hidden"); $("placeOut").classList.add("hidden");
+  ["climateCard", "cropsCard", "incomeCard"].forEach((id) => $(id).classList.add("hidden"));
+  $("goBtn").disabled = true;
+  try {
+    const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=" + encodeURIComponent(q);
+    const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+    if (!res.ok) throw new Error("Nominatim answered " + res.status);
+    const arr = await res.json();
+    if (!arr.length) throw new Error("No place found for \"" + q + "\". Try adding the country name.");
+    const p = arr[0];
+    place = { name: p.display_name, lat: +p.lat, lon: +p.lon, cc: (p.address && p.address.country_code || "").toUpperCase(), country: p.address && p.address.country || "" };
+    $("placeName").textContent = place.name;
+    $("placeLatLon").textContent = place.lat.toFixed(4) + ", " + place.lon.toFixed(4);
+    $("placeCountry").textContent = place.country + (place.cc ? " (" + place.cc + ")" : "");
+    $("mapLink").href = "https://www.google.com/maps?q=" + place.lat + "," + place.lon;
+    $("searchLink").href = "https://www.google.com/search?q=" + encodeURIComponent("agriculture main crops " + shortName(place.name));
+    $("placeOut").classList.remove("hidden");
+    showCrops();
+    await loadClimate();
+  } catch (e) {
+    $("placeErr").textContent = String(e.message || e); $("placeErr").classList.remove("hidden");
+  } finally { $("goBtn").disabled = false; }
+}
+function shortName(s) { return s.split(",").slice(0, 2).join(",") + ", " + (place && place.country || ""); }
+
+// ---------- 2. climate ----------
+async function loadClimate() {
+  $("climateCard").classList.remove("hidden"); $("climateOut").classList.add("hidden"); $("climateErr").classList.add("hidden");
+  const endYear = new Date().getFullYear() - 1, startYear = endYear - CLIMATE_YEARS + 1;
+  $("climateYears").textContent = `(${startYear}–${endYear} averages)`;
+  $("climateStatus").textContent = "Fetching " + CLIMATE_YEARS + " years of daily weather …"; $("climateStatus").classList.remove("hidden");
+  try {
+    const url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + place.lat + "&longitude=" + place.lon
+      + "&start_date=" + startYear + "-01-01&end_date=" + endYear + "-12-31&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum&timezone=auto";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Open-Meteo answered " + res.status);
+    const d = await res.json();
+    if (!d.daily || !d.daily.time) throw new Error("No daily data in the answer.");
+    climate = summarize(d.daily, startYear, endYear);
+    renderClimate();
+    $("climateStatus").classList.add("hidden"); $("climateOut").classList.remove("hidden");
+  } catch (e) {
+    $("climateStatus").classList.add("hidden");
+    $("climateErr").textContent = "Climate lookup failed: " + (e.message || e); $("climateErr").classList.remove("hidden");
+  }
+}
+function summarize(daily, y0, y1) {
+  const m = Array.from({ length: 12 }, () => ({ tmax: 0, tmin: 0, tmean: 0, rain: 0, n: 0, frost: 0, hot: 0 }));
+  const years = y1 - y0 + 1;
+  let absMin = Infinity, absMax = -Infinity;
+  for (let i = 0; i < daily.time.length; i++) {
+    const mo = +daily.time[i].slice(5, 7) - 1, tx = daily.temperature_2m_max[i], tn = daily.temperature_2m_min[i], tm = daily.temperature_2m_mean[i], pr = daily.precipitation_sum[i];
+    if (tx == null || tn == null) continue;
+    const b = m[mo]; b.tmax += tx; b.tmin += tn; b.tmean += (tm == null ? (tx + tn) / 2 : tm); b.rain += (pr || 0); b.n++;
+    if (tn < 0) b.frost++; if (tx >= 35) b.hot++;
+    absMin = Math.min(absMin, tn); absMax = Math.max(absMax, tx);
+  }
+  const months = m.map((b, i) => ({ month: MONTHS[i], tmax: b.tmax / b.n, tmin: b.tmin / b.n, tmean: b.tmean / b.n, rain: b.rain / years, frostDays: b.frost / years, hotDays: b.hot / years }));
+  const annualRain = months.reduce((s, x) => s + x.rain, 0);
+  const growing = months.filter((x) => x.tmean >= 10).length;             // months with mean >= 10°C (a common simple threshold)
+  const frostMonths = months.filter((x) => x.frostDays >= 1).map((x) => x.month);
+  const hot = months.reduce((a, b) => (b.tmax > a.tmax ? b : a)), cold = months.reduce((a, b) => (b.tmin < a.tmin ? b : a));
+  const wettest = months.reduce((a, b) => (b.rain > a.rain ? b : a)), dry = months.filter((x) => x.rain < 30).map((x) => x.month);
+  return { months, annualRain, growing, frostMonths, hot, cold, wettest, dry, absMin, absMax, years };
+}
+function renderClimate() {
+  const c = climate, stat = (k, v, u) => `<div class="stat"><div class="k">${k}</div><div class="v">${v} <span class="u">${u || ""}</span></div></div>`;
+  $("climateStats").innerHTML =
+    stat("Annual rainfall", fmt(c.annualRain), "mm/yr") +
+    stat("Warmest month", c.hot.month + " " + fmt(c.hot.tmax, 1) + "°C", "avg daily high") +
+    stat("Coldest month", c.cold.month + " " + fmt(c.cold.tmin, 1) + "°C", "avg daily low") +
+    stat("Months with mean ≥ 10°C", c.growing, "of 12") +
+    stat("Frost", c.frostMonths.length ? c.frostMonths.join(", ") : "none in these years", c.frostMonths.length ? "months with ≥1 day < 0°C" : "") +
+    stat("Dry months (< 30 mm)", c.dry.length ? c.dry.join(", ") : "none", "") +
+    stat("Extremes in " + c.years + " yrs", fmt(c.absMin, 1) + " / " + fmt(c.absMax, 1) + "°C", "lowest low / highest high");
+  // table
+  let h = "<tr><th>Month</th>" + c.months.map((x) => `<th>${x.month}</th>`).join("") + "</tr>";
+  h += "<tr><td>Avg high °C</td>" + c.months.map((x) => `<td>${fmt(x.tmax, 1)}</td>`).join("") + "</tr>";
+  h += "<tr><td>Avg low °C</td>" + c.months.map((x) => `<td>${fmt(x.tmin, 1)}</td>`).join("") + "</tr>";
+  h += "<tr><td>Rain mm</td>" + c.months.map((x) => `<td>${fmt(x.rain)}</td>`).join("") + "</tr>";
+  h += "<tr><td>Days ≥ 35°C</td>" + c.months.map((x) => `<td>${fmt(x.hotDays, 1)}</td>`).join("") + "</tr>";
+  $("climateTable").innerHTML = h;
+  // chart: rain bars + tmax/tmin lines
+  const W = 760, H = 300, L = 44, R = 44, T = 24, B = 34, iw = W - L - R, ih = H - T - B;
+  const rmax = Math.max(50, Math.ceil(Math.max(...c.months.map((x) => x.rain)) / 50) * 50);
+  const tlo = Math.min(0, Math.floor(Math.min(...c.months.map((x) => x.tmin)) / 5) * 5), thi = Math.ceil(Math.max(...c.months.map((x) => x.tmax)) / 5) * 5;
+  const xs = (i) => L + (i + 0.5) * (iw / 12), yr = (v) => T + ih - (v / rmax) * ih, yt = (v) => T + ih - ((v - tlo) / (thi - tlo)) * ih;
+  let s = `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff" rx="8"/>`;
+  for (let g = 0; g <= 4; g++) { const y = T + (ih * g) / 4; s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#eee"/>`; }
+  c.months.forEach((x, i) => { s += `<rect x="${xs(i) - 14}" y="${yr(x.rain)}" width="28" height="${T + ih - yr(x.rain)}" fill="#A9C4E4" rx="3"/><text x="${xs(i)}" y="${H - 12}" font-size="12" text-anchor="middle" fill="#5B6355">${x.month}</text>`; });
+  const path = (key, col) => `<polyline fill="none" stroke="${col}" stroke-width="2.5" points="${c.months.map((x, i) => xs(i) + "," + yt(x[key])).join(" ")}"/>`;
+  s += path("tmax", "#C97A3D") + path("tmin", "#2F5D3A");
+  for (let g = 0; g <= 4; g++) { const y = T + (ih * g) / 4; s += `<text x="${L - 6}" y="${y + 4}" font-size="11" text-anchor="end" fill="#5B6355">${fmt(thi - ((thi - tlo) * g) / 4)}°</text><text x="${W - R + 6}" y="${y + 4}" font-size="11" fill="#5B6355">${fmt(rmax - (rmax * g) / 4)}</text>`; }
+  s += `<text x="${L}" y="14" font-size="12" fill="#C97A3D">— avg high</text><text x="${L + 90}" y="14" font-size="12" fill="#2F5D3A">— avg low</text><text x="${L + 170}" y="14" font-size="12" fill="#5B6355">▮ rain mm (right axis)</text>`;
+  $("climateChart").innerHTML = s;
+}
+
+// ---------- 3. crops of the country (FAOSTAT file built on the PC) ----------
+function showCrops() {
+  $("cropsCard").classList.remove("hidden");
+  const fao = window.FAO_DATA;
+  if (!fao) { $("cropsOut").innerHTML = '<div class="note">The FAOSTAT data file (faostat_top_crops.js) is not built yet — run fetch_faostat_top_crops.bat on the PC and reload. No numbers are shown until then.</div>'; $("cropsSrc").textContent = ""; $("incomeCard").classList.add("hidden"); return; }
+  const iso3 = cc2to3(place.cc);
+  countryCrops = iso3 && fao.countries[iso3] ? fao.countries[iso3] : null;
+  if (!countryCrops) { $("cropsOut").innerHTML = `<div class="note">FAOSTAT has no crop rows for ${place.country || "this country"} (${place.cc || "?"}) in the file. Nothing is shown rather than guessed.</div>`; $("cropsSrc").textContent = "Source: " + fao.source; $("incomeCard").classList.add("hidden"); return; }
+  $("cropsYear").textContent = `(${countryCrops.country}, ${countryCrops.year})`;
+  let h = "<table><tr><th>Crop</th><th>Production (t)</th><th>Area (ha)</th><th>Yield (t/ha)</th><th>Producer price (USD/t)</th></tr>";
+  countryCrops.crops.forEach((x) => { h += `<tr><td>${x.item}</td><td>${fmt(x.production_t)}</td><td>${fmt(x.area_ha)}</td><td>${x.yield_kg_ha != null ? fmt(x.yield_kg_ha / 1000, 2) : "–"}</td><td>${x.price_usd_t != null ? fmt(x.price_usd_t) + (x.price_year && x.price_year !== countryCrops.year ? " <span class='muted'>(" + x.price_year + (x.price_year < countryCrops.year - 5 ? ", old" : "") + ")</span>" : "") : "no data"}</td></tr>`; });
+  h += "</table>";
+  $("cropsOut").innerHTML = h;
+  $("cropsSrc").textContent = "Source: " + fao.source + " (QCL " + fao.qcl_year + (fao.pp_year ? ", PP " + fao.pp_year : "") + "; file built " + fao.generated_at + "). Top " + fao.top_n + " of " + countryCrops.n_crops_total + " crops by production.";
+  // income
+  $("incomeCard").classList.remove("hidden");
+  $("cropSel").innerHTML = countryCrops.crops.map((x, i) => `<option value="${i}">${x.item}</option>`).join("");
+  fillDefaults(); calc();
+}
+function fillDefaults() {
+  const x = countryCrops.crops[+$("cropSel").value];
+  $("yieldIn").value = x.yield_kg_ha != null ? (x.yield_kg_ha / 1000).toFixed(2) : "";
+  const stale = x.price_year != null && countryCrops.year != null && x.price_year < countryCrops.year - 5;
+  $("priceIn").value = x.price_usd_t != null && !stale ? Math.round(x.price_usd_t) : "";
+  $("incomeNote").textContent = x.price_usd_t == null ? "FAOSTAT has no producer price for this crop in this country — type a price you know, otherwise revenue stays blank."
+    : stale ? `FAOSTAT's last producer price for this crop here is from ${x.price_year} (${fmt(x.price_usd_t)} USD/t) — too old to use as a default. Type a current price.` : "";
+}
+["cropSel"].forEach((id) => $(id).addEventListener("change", () => { fillDefaults(); calc(); }));
+["areaIn", "yieldIn", "priceIn", "costIn", "costPct"].forEach((id) => $(id).addEventListener("input", calc));
+function calc() {
+  const area = +$("areaIn").value, y = +$("yieldIn").value, p = $("priceIn").value === "" ? null : +$("priceIn").value;
+  const prod = area > 0 && y > 0 ? area * y : null, rev = prod != null && p != null ? prod * p : null;
+  let cost = null;
+  if ($("costIn").value !== "") cost = +$("costIn").value; else if ($("costPct").value !== "" && rev != null) cost = rev * (+$("costPct").value / 100);
+  $("outProd").textContent = prod != null ? fmt(prod, 1) + " t" : "–";
+  $("outRev").textContent = usd(rev); $("outCost").textContent = cost != null ? usd(cost) : "– (enter a cost)";
+  $("outNet").textContent = rev != null && cost != null ? usd(rev - cost) : "–";
+}
+
+// ISO 3166 alpha-2 -> alpha-3 (FAOSTAT uses alpha-3). Countries and territories with FAOSTAT data.
+const ISO = "AF:AFG AL:ALB DZ:DZA AO:AGO AR:ARG AM:ARM AU:AUS AT:AUT AZ:AZE BS:BHS BH:BHR BD:BGD BB:BRB BY:BLR BE:BEL BZ:BLZ BJ:BEN BT:BTN BO:BOL BA:BIH BW:BWA BR:BRA BN:BRN BG:BGR BF:BFA BI:BDI KH:KHM CM:CMR CA:CAN CV:CPV CF:CAF TD:TCD CL:CHL CN:CHN CO:COL KM:COM CG:COG CD:COD CR:CRI CI:CIV HR:HRV CU:CUB CY:CYP CZ:CZE DK:DNK DJ:DJI DM:DMA DO:DOM EC:ECU EG:EGY SV:SLV GQ:GNQ ER:ERI EE:EST SZ:SWZ ET:ETH FJ:FJI FI:FIN FR:FRA GA:GAB GM:GMB GE:GEO DE:DEU GH:GHA GR:GRC GT:GTM GN:GIN GW:GNB GY:GUY HT:HTI HN:HND HU:HUN IS:ISL IN:IND ID:IDN IR:IRN IQ:IRQ IE:IRL IL:ISR IT:ITA JM:JAM JP:JPN JO:JOR KZ:KAZ KE:KEN KP:PRK KR:KOR KW:KWT KG:KGZ LA:LAO LV:LVA LB:LBN LS:LSO LR:LBR LY:LBY LT:LTU LU:LUX MG:MDG MW:MWI MY:MYS MV:MDV ML:MLI MT:MLT MR:MRT MU:MUS MX:MEX MD:MDA MN:MNG ME:MNE MA:MAR MZ:MOZ MM:MMR NA:NAM NP:NPL NL:NLD NZ:NZL NI:NIC NE:NER NG:NGA MK:MKD NO:NOR OM:OMN PK:PAK PA:PAN PG:PNG PY:PRY PE:PER PH:PHL PL:POL PT:PRT QA:QAT RO:ROU RU:RUS RW:RWA SA:SAU SN:SEN RS:SRB SL:SLE SG:SGP SK:SVK SI:SVN SB:SLB SO:SOM ZA:ZAF SS:SSD ES:ESP LK:LKA SD:SDN SR:SUR SE:SWE CH:CHE SY:SYR TW:TWN TJ:TJK TZ:TZA TH:THA TL:TLS TG:TGO TT:TTO TN:TUN TR:TUR TM:TKM UG:UGA UA:UKR AE:ARE GB:GBR US:USA UY:URY UZ:UZB VE:VEN VN:VNM YE:YEM ZM:ZMB ZW:ZWE PS:PSE XK:XKX";
+const ISO_MAP = Object.fromEntries(ISO.split(" ").map((p) => p.split(":")));
+function cc2to3(cc) { return ISO_MAP[cc] || null; }
+</script>
+</body>
+</html>
