@@ -29,11 +29,8 @@ small{display:block;margin-top:24px;color:#7f9b7a}
 <p>나 다시 돌아갈래 · Back to the Land (beta)<br>3-year chat farm sim · any region on Earth · KO / EN</p>
 <a class="btn" href="farm.html?lang=ko">한국어로 시작</a>
 <a class="btn alt" href="farm.html?lang=en">Play in English</a>
-<small>모든 수치는 게임용 설계값이며 실제 통계가 아닙니다 · All numbers are game values, not real statistics</small>
+<small>언어를 골라 시작하세요 · Choose a language to start<br>모든 수치는 게임용 설계값이며 실제 통계가 아닙니다 · All numbers are game values, not real statistics</small>
 </div>
-<script>
-// 브라우저 언어에 맞춰 바로 게임으로 이동 (링크 크롤러는 스크립트를 실행하지 않으므로 위 og 태그를 그대로 읽는다)
-setTimeout(function(){ var ko = /^ko/i.test(navigator.language || ''); location.replace('farm.html?lang=' + (ko ? 'ko' : 'en')); }, 900);
-</script>
+
 </body>
 </html>
