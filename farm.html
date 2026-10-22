@@ -1,10 +1,14 @@
-<title>Virtual Farming — 나 다시 돌아갈래 / Back to the Land (beta)</title>
+<!doctype html>
+<html lang="ko">
+<head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Virtual Farming — 나 다시 돌아갈래 / Back to the Land (beta)</title>
+<meta name="description" content="Chat-style 3-year farm simulation. Pick a region anywhere in the world, plant Korean or overseas crops, survive weather, pests and prices. Game values, not real statistics. KO/EN.">
 <meta property="og:title" content="Virtual Farming — Back to the Land (beta)">
 <meta property="og:description" content="Chat-style 3-year farm simulation. Pick a region anywhere in the world, plant Korean or overseas crops, survive random weather, pests and prices. Korean public data + design values. KO/EN.">
 <meta property="og:image" content="https://touch98ce-jpg.github.io/global_crop_guide/farm_og.png">
 <meta property="og:url" content="https://touch98ce-jpg.github.io/global_crop_guide/farm.html">
-<meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:type" content="website"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Virtual Farming — Back to the Land (beta)"><meta name="twitter:image" content="https://touch98ce-jpg.github.io/global_crop_guide/farm_og.png">
 <style>
 /* 레이아웃: PC통신 단말풍. 검은 바탕에 녹색 글, 아래에 입력줄과 번호 버튼. 휴대폰 세로 기준 */
 :root{--bg:#0b1410;--fg:#cfe8c8;--dim:#7f9b7a;--hi:#ffe08a;--acc:#6fd27a;--bad:#ff8a7a;--line:#24402c;--panel:#101e16;--font:'Nanum Gothic Coding','D2Coding',ui-monospace,Menlo,Consolas,monospace;color-scheme:dark}
@@ -41,6 +45,8 @@ form button.next{background:var(--hi);display:none}
 .mute{font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;cursor:pointer}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&display=swap">
+</head>
+<body>
 <main>
 <header><div><b id="h1">Virtual Farming</b> <span id="h2"></span> <span style="color:#ff8a7a">· 게임용 설계값, 실제 통계 아님 / game values, not real statistics</span></div><div><span id="h3"></span> <button type="button" class="mute" id="lang">EN</button> <button type="button" class="mute" id="bgm" title="BGM">🎶</button> <button type="button" class="mute" id="mute">🔊</button> <button type="button" class="mute" id="reset" title="새 게임 / New game">↺</button> <span id="ver" style="font-size:10px;color:var(--dim)"></span></div></header>
 <div id="top"><div id="fieldWrap"><canvas id="fieldCv"></canvas></div><div id="sceneWrap"><canvas id="sceneCv"></canvas><div id="sceneMsg"></div></div></div>
@@ -521,3 +527,5 @@ async function loadRegionQuiet(region){ try { const r = await fetch(`https://arc
 </script>
 <!-- 방문 카운트(G5): GoatCounter 계정을 만든 뒤 아래 주석을 풀고 YOURCODE를 바꾸세요. 개인정보 없음, 쿠키 없음.
 <script data-goatcounter="https://YOURCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script> -->
+</body>
+</html>
