@@ -10,8 +10,8 @@
 :root{--bg:#0b1410;--fg:#cfe8c8;--dim:#7f9b7a;--hi:#ffe08a;--acc:#6fd27a;--bad:#ff8a7a;--line:#24402c;--panel:#101e16;--font:'Nanum Gothic Coding','D2Coding',ui-monospace,Menlo,Consolas,monospace;color-scheme:dark}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#0b1410;--fg:#cfe8c8}}
 :root[data-theme="light"]{--bg:#0b1410;--fg:#cfe8c8}
-html{height:100%;height:-webkit-fill-available}body{box-sizing:border-box;height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));margin:0;overscroll-behavior:none;position:fixed;inset:0;width:100%}
-main{max-width:640px;margin:0 auto;height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:6px;min-height:0;position:relative}
+html{height:100%;height:-webkit-fill-available}body{box-sizing:border-box;height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden;overflow-x:hidden;max-width:100vw;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));margin:0;overscroll-behavior:none;position:fixed;inset:0;width:100%}
+main{max-width:640px;margin:0 auto;height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:6px;min-height:0;position:relative;will-change:transform}
 #top{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:6px;display:grid;grid-template-columns:5fr 6fr;gap:6px;height:150px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #fieldCv,#sceneCv{width:100%;height:100%;display:block;border-radius:4px}
 #fieldWrap,#sceneWrap{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#0a120d}
@@ -26,6 +26,8 @@ header b{color:var(--hi);font-weight:400}
 .in{display:grid;gap:6px}
 .choices{display:flex;flex-wrap:wrap;gap:6px;max-height:30vh;max-height:30dvh;overflow:auto}
 @media (max-height:680px){#top{height:120px}.choices{max-height:24dvh}header{font-size:11px}}
+/* 키보드가 올라온 상태(visualViewport가 줄어듦): 그림판을 접고 로그를 살린다 */
+html.kbd #top{height:84px}html.kbd header{font-size:11px;padding-bottom:2px}html.kbd .choices{max-height:22vh}
 @media (max-width:400px){#top{grid-template-columns:4fr 6fr}form button#send{display:none}}
 .choices button{font:inherit;font-size:13px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;text-align:left}
 .choices button:hover,.choices button:focus-visible{border-color:var(--acc);outline:none}
@@ -491,6 +493,12 @@ $('#bgm').onclick = () => BGM.toggle();
 function setLang(l, quiet){ LANG = l; $('#lang').textContent = l === 'ko' ? 'EN' : '한국어'; $('#h1').textContent = 'Virtual Farming — ' + t('나 다시 돌아갈래', 'Back to the Land'); $('#cmd').placeholder = t('번호 또는 명령 (도움: ?)', 'number or command (help: ?)'); $('#send').textContent = t('입력', 'Enter'); $('#nextBtn').textContent = t('다음 달 ▶', 'Next month ▶'); document.title = $('#h1').textContent; if (S) { S.plots.forEach(p => { if (p.crop) p.info = cropInfo(findCrop(p.crop) || D.catalog.find(c => c.key === p.crop) || { name: p.crop, grade: 'generic', cat: 'leaf' }, p.mode === 'gh' ? 'gh' : 'open'); }); status(); if (!quiet) { say(t('(한국어로 바꿨습니다)', '(switched to English)'), 'sys'); if (!UI.pending) prompt(); } } }
 $('#lang').onclick = () => setLang(LANG === 'ko' ? 'en' : 'ko');
 window.addEventListener('resize', drawPanel);
+// iOS/안드로이드 키보드: 레이아웃 뷰포트 대신 visualViewport 크기에 body를 맞추고 위로 고정 → 상단 그림판이 밀려 나가지 않음
+(function fitViewport(){ const vv = window.visualViewport; if (!vv) return; const main = document.querySelector('main'); let raf = 0, base = vv.height;
+  const fit = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const h = Math.round(vv.height); if (h > base) base = h; const kbd = h < base * .8; document.documentElement.classList.toggle('kbd', kbd);
+    // iOS는 키보드가 뜨면 고정 요소까지 위로 밀어 올린다 → 보이는 영역(visualViewport)의 위치·크기로 main을 옮기고 줄인다
+    main.style.height = h + 'px'; main.style.transform = kbd ? `translate(${Math.round(vv.offsetLeft)}px, ${Math.round(vv.offsetTop)}px)` : ''; if (!kbd) { main.style.height = ''; } drawPanel(); scrollLog(); }); };
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); window.addEventListener('orientationchange', () => { base = 0; setTimeout(fit, 300); }); $('#cmd').addEventListener('focus', () => { setTimeout(fit, 60); setTimeout(fit, 400); }); $('#cmd').addEventListener('blur', () => { setTimeout(fit, 60); setTimeout(fit, 400); }); })();
 (function boot(){ const q = new URLSearchParams(location.search); const ql = q.get('lang'); const seed = parseInt(q.get('seed'));
   const startWith = (lang) => { setLang(lang, true); MOTION.enable(); if (seed) { let region = null; if (q.get('r')) { const [lat, lon, ko] = q.get('r').split(','); region = { ko, en: ko, admin: '', lat: +lat, lon: +lon, months: null, pending: true }; } const opt = { seed, diff: q.get('diff') || 'normal', region: null, replay: { cap: +q.get('cap') || (lang === 'en' ? 20000 * FX : 3e7), diff: q.get('diff') || 'normal' } }; if (region) { newGame(opt); say(t(`같은 조건 도전: ${region.ko} 기상 자료를 받는 중…`, `Challenge link: loading weather for ${region.ko}…`), 'sys'); loadRegionQuiet(region).then(() => { S.region = region.months ? region : null; }); } else newGame(opt); return; } newGame(); };
   let auto = null; try { auto = localStorage.getItem('vf_auto'); } catch (e) {}
